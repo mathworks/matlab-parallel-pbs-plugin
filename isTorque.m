@@ -17,8 +17,7 @@ end
 % 'pbs_version = 19.0.0'.
 commandToRun = 'qstat --version';
 try
-    % Make the shelled out call to run the command.
-    [cmdFailed, cmdOut] = runSchedulerCommand(commandToRun);
+    [cmdFailed, cmdOut] = runSchedulerCommand(cluster, commandToRun);
 catch err
     cmdFailed = true;
     cmdOut = err.message;
