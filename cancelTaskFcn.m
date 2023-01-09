@@ -13,10 +13,7 @@ if ~isa(cluster, 'parallel.Cluster')
     error('parallelexamples:GenericPBS:SubmitFcnError', ...
         'The function %s is for use with clusters created using the parcluster command.', currFilename)
 end
-if ~cluster.HasSharedFilesystem
-    error('parallelexamples:GenericPBS:NotSharedFileSystem', ...
-        'The function %s is for use with shared filesystems.', currFilename)
-end
+
 % Get the information about the actual cluster used
 data = cluster.getJobClusterData(task.Parent);
 if isempty(data)
@@ -45,8 +42,7 @@ erroredTaskAndCauseString = '';
 commandToRun = sprintf('qdel "%s"', schedulerID);
 dctSchedulerMessage(4, '%s: Canceling task on cluster using command:\n\t%s.', currFilename, commandToRun);
 try
-    % Make the shelled out call to run the command.
-    [cmdFailed, cmdOut] = runSchedulerCommand(commandToRun);
+    [cmdFailed, cmdOut] = runSchedulerCommand(cluster, commandToRun);
 catch err
     cmdFailed = true;
     cmdOut = err.message;
