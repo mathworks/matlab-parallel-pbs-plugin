@@ -20,7 +20,7 @@
 # The following environment variables are set by PBS:
 # PBS_NODEFILE - path to a file listing the hostnames allocated to this PBS job
 
-# Copyright 2006-2023 The MathWorks, Inc.
+# Copyright 2006-2024 The MathWorks, Inc.
 
 # If PARALLEL_SERVER_ environment variables are not set, assign any
 # available values with form MDCE_ for backwards compatibility
@@ -35,6 +35,10 @@ PARALLEL_SERVER_DEBUG=${PARALLEL_SERVER_DEBUG:="${MDCE_DEBUG}"}
 # but on slow filesystems we might try to use the folder before we see it's
 # been created. Set TMPDIR back to /tmp here to avoid this.
 export TMPDIR=/tmp
+PARALLEL_SERVER_GENVLIST="${PARALLEL_SERVER_GENVLIST},TMPDIR"
+
+# Other environment variables to forward
+PARALLEL_SERVER_GENVLIST="${PARALLEL_SERVER_GENVLIST},HOME,USER"
 
 # Echo the nodes that the scheduler has allocated to this job:
 echo -e "The scheduler has allocated the following nodes to this job:\n$(cat ${PBS_NODEFILE:?"Node file undefined"})"
@@ -73,24 +77,25 @@ esac
 ADDITIONAL_MPIEXEC_ARGS="${MPI_VERBOSE} -n ${PARALLEL_SERVER_TOTAL_TASKS}"
 if [ ${IS_TORQUE} -eq 1 ] ; then
     CUSTOM_NODEFILE="/tmp/${PBS_JOBID}.nodefile.txt"
-    
+
     # Install a trap to make sure the custom nodefile is deleted.
     trap "rm -f ${CUSTOM_NODEFILE}" 0 1 2 15
-    
+
     # Select every N-th line from ${PBS_NODEFILE}, where N = NumThreads.
     awk "NR % ${PARALLEL_SERVER_NUM_THREADS} == 0" ${PBS_NODEFILE} > "${CUSTOM_NODEFILE}"
-    
+
     echo -e "Starting ${PARALLEL_SERVER_TOTAL_TASKS} workers on the following nodes:\n$(cat ${CUSTOM_NODEFILE})"
 
     ADDITIONAL_MPIEXEC_ARGS="${ADDITIONAL_MPIEXEC_ARGS} -f \"${CUSTOM_NODEFILE}\""
 fi
 
-# Unset the hostname variables to ensure they don't get forwarded by mpiexec
-unset HOST HOSTNAME
-
 # Construct the command to run.
-CMD="\"${FULL_MPIEXEC}\" -bind-to core:${PARALLEL_SERVER_NUM_THREADS} ${ADDITIONAL_MPIEXEC_ARGS} \
-    \"${PARALLEL_SERVER_MATLAB_EXE}\" ${PARALLEL_SERVER_MATLAB_ARGS}"
+CMD="\"${FULL_MPIEXEC}\" \
+    -genvlist ${PARALLEL_SERVER_GENVLIST} \
+    -bind-to core:${PARALLEL_SERVER_NUM_THREADS} \
+    ${ADDITIONAL_MPIEXEC_ARGS} \
+    \"${PARALLEL_SERVER_MATLAB_EXE}\" \
+    ${PARALLEL_SERVER_MATLAB_ARGS}"
 
 # Echo the command so that it is shown in the output log.
 echo $CMD
