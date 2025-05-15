@@ -20,7 +20,7 @@
 # The following environment variables are set by PBS:
 # PBS_NODEFILE - path to a file listing the hostnames allocated to this PBS job
 
-# Copyright 2006-2024 The MathWorks, Inc.
+# Copyright 2006-2025 The MathWorks, Inc.
 
 # If PARALLEL_SERVER_ environment variables are not set, assign any
 # available values with form MDCE_ for backwards compatibility
@@ -89,10 +89,17 @@ if [ ${IS_TORQUE} -eq 1 ] ; then
     ADDITIONAL_MPIEXEC_ARGS="${ADDITIONAL_MPIEXEC_ARGS} -f \"${CUSTOM_NODEFILE}\""
 fi
 
+if [ ! -z "${PARALLEL_SERVER_BIND_TO_CORE}" ] && [ "${PARALLEL_SERVER_BIND_TO_CORE}" != "false" ] ; then
+    BIND_TO_CORE_ARG="-bind-to core:${PARALLEL_SERVER_NUM_THREADS}"
+else
+    BIND_TO_CORE_ARG=""
+fi
+
 # Construct the command to run.
 CMD="\"${FULL_MPIEXEC}\" \
+    ${PARALLEL_SERVER_MPIEXEC_ARG} \
     -genvlist ${PARALLEL_SERVER_GENVLIST} \
-    -bind-to core:${PARALLEL_SERVER_NUM_THREADS} \
+    ${BIND_TO_CORE_ARG} \
     ${ADDITIONAL_MPIEXEC_ARGS} \
     \"${PARALLEL_SERVER_MATLAB_EXE}\" \
     ${PARALLEL_SERVER_MATLAB_ARGS}"
